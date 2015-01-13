@@ -21,27 +21,12 @@
 	;			jl jle jg jge				Jump less, less or equal, greater, greater or equal
 	;			cmp						Compare
 
-;	SUBROUTINES	
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-bootstring:
-	db 'Booting in progress...',0	;	The ",0" is called a null terminating
-									;	It forces the string to end with a null character
-									;	So we can know when the string ends
 	
-HelloWorld:
-	db 'Hello World',0
 
-											;	Define HelloWorld so we can loop through it forever
-											;	To do : Study labels page 14
-											
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;
-;	Other methods to defining BIOS OFFSET
-; Third attempt
-;mov bx , the_secret
-;add bx , 0 x7c00
-;mov al , [bx]
-;int 0x10
+;	STRINGS AND REFERENCES
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;	
+	%include "stringsReferences.asm"		;	Include asm file here. The %include will be overwritten by contempt of file
+	%include "functions.asm"					
 
 mov al, [0x7c1e]
 int 0x10
@@ -64,6 +49,16 @@ cmp al, 4							;	Compare instruction.
 je HelloWorld					;	If condition is met, move to HelloWorld.
 	
 jmp HelloWorld					;	Jump to HelloWorld Address, which will then jmp in current address....
+
+mov al, 'H'
+jmp print_function				;	jmp to subroutine
+returnToSomepoint:			;	Ensure that we can get back after subroutine... quick 'n' dirty exemple
+
+mov al, 'H'
+call print_function2				;	call a subroutine
+
+
+
 jmp $								;	Jump to current instruction offset
 	
 	
