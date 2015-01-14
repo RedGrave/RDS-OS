@@ -1,7 +1,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;	String References
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-print:
-	mov ah, 0x0e
-	int 0x10
-	ret
+HELLO_WORLD:
+	db 'Hello World !',0
+	
+SHUTDOWN:
+	db 'That is something... ',0
