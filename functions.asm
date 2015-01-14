@@ -39,3 +39,33 @@ readFloppyDrive:
 								;	This means we're going to read 5 sectors and store them from 0xa000 to 0x1234
 								
 	int 0x13				;	Interrupt
+	jc disk_error			;	Jump if carry flag is set.
+	
+	cmp al, 0x05			;	If we didn't read n° of sector expected
+	jne disk_error
+
+disk_load:
+	push dx				;	Store dx on stack
+	mov ah, 0x02		;	Bios read function
+	mov al, dh			;	Read dh sector
+	mov ch, 0x00		;	Cylinder 0
+	mov dh, 0x00		;	Head 0x00
+	mov cl, 0x02			;	Start from sector 2
+	int 0x13
+	jc disk_error
+	
+	pop dx
+	cmp dh, al
+	jne disk_error
+	ret
+	
+print_hex:
+	mov bx, HEX_OUT
+	call printstr
+	ret
+	
+	
+disk_error:
+	mov bx, DISK_ERROR_MSG
+	call printstr
+	jmp $
