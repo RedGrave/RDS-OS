@@ -40,7 +40,7 @@ BEGIN_PM:
 	mov ebx, MSG_PROT_MODE
 	call print_string_pm
 
-	;call KERNEL_OFFSET
+	call KERNEL_OFFSET
 
 	jmp $
 
@@ -50,4 +50,4 @@ MSG_PROT_MODE   db "Successfully landed in 32-bit Protected Mode$"
 MSG_LOAD_KERNEL db "Loading kernel into memory$"
 
 times 510 - ($ - $$) db 0
-dw 0xdead
+dw 0xaa55
