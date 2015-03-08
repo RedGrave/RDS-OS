@@ -1,105 +1,53 @@
-;	
-;	Boot sector test to print a custom string... just for testing purpose.
-;	
+[org 0x7c00]
+KERNEL_OFFSET equ 0x1000   ; mem offset where we load our kernel
 
+mov [BOOT_DRIVE], dl       ; BIOS stores our boot drive in DL
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;	MAIN
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+mov bp, 0x9000             ; set up the stack
+mov sp, bp
+
+mov bx, MSG_REAL_MODE      ; Announce that we are starting from real mode
+call print_string
+
+;call load_kernel           ; load the kernel
+
+call switch_to_pm          ; switch to 32 bit protected mode
+
+jmp $
+
+%include "printString.asm"
+%include "diskRead.asm"
+%include "globalDescriptorTable.asm"
+%include "printString_PM.asm"
+%include "switchToPM.asm"
+
 [bits 16]
-[org 0x7c00]						;	Tell where to load.
-										;	In this case we references the bootloader reserved zone
 
-		mov		dl, [BOOT_DRIVE]		;	
-		mov		bp, 0x8000				;	Dump stack sp on 0x8000
-		mov		sp, bp						;	
-					
-		mov		bx, 0x9000				;	Define offset 0x9000
-		mov		dh, 0x04					;	Load 2 complete sector in it (512 Bytes)
-		mov		dl, 0x00					;	Select boot drive
-		mov		cl, 0x00						;	Start from sector 0
-		call		disk_load					;
-		
-		mov 	bx, 0x9000					;	Define offset 0x9000
-		
-print_next_value:
-		mov 	al, [bx]
-		call		printChar
-		inc		bx
-		cmp		bx, 0x9004
-		jl			print_next_value
-		
-		
-		mov		bx, 0x9200				;	Define offset 0x9100
-		
-print_next_value2:
+load_kernel:
+	mov bx, MSG_LOAD_KERNEL
+	call print_string
 
-		mov		al, [bx]
-		call		printChar
-		inc		bx
-		cmp		bx, 0x9204
-		jl			print_next_value2
+	mov bx, KERNEL_OFFSET
+	mov dh, 30 
+	mov dl, [BOOT_DRIVE]
+	call disk_load
 
-		jmp		$								;	Hang
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;	Functions
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-printstr:
-	next_char:
-		mov		al, [SI]							;	Before launching this, ensure that ASCII value is in AL
-														;	The string reference, or offset, must be stored in SI
-		inc		SI									;	Increment SI Pointer
-		cmp		al, 0x00						;	Check if AL == 0
-		je			exit_printstr					;	If we encounter '0', it means that we arrived at the end of the string and must end the treatement
-		call		printChar						;	Print a character
-		jmp		next_char						;
-	exit_printstr:									;
-		ret											;
-		
-printChar:
-	mov ah, 0x0e		;	Set to write one character mode on BIOS
-	int 0x10				;	Execute "PRINT"
-	ret						;	return
-	
-disk_load:
-	push dx				;	Store dx on stack
-	mov ah, 0x02		;	Bios read function
-	mov al, dh			;	Read dh sector
-	mov ch, 0x00		;	Cylinder 0
-	mov dh, 0x00		;	Head 0x00
-	mov cl, 0x02			;	Start from sector 2
-	int 0x13
-	jc disk_error
-	
-	pop dx
-	cmp dh, al
-	jne disk_error
 	ret
-	
-disk_error:
-	mov bx, DISK_ERROR_MSG
-	call printstr
+
+[bits 32]
+
+BEGIN_PM:
+	mov ebx, MSG_PROT_MODE
+	call print_string_pm
+
+	;call KERNEL_OFFSET
+
 	jmp $
-	
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;	String References
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-HELLO_WORLD:
-	db			"HELLO WORLD !!!!",0x00
-	
-DISK_ERROR_MSG:
-	db			'Disk read error.',0x00
-	
-BOOT_DRIVE:
-	db			0x00
-	
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;	Padding File
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-	times		510-($-$$) db 0x00				;	Padding rest of software
-	dw			0xaa55									;	Insert bootloader signature
+BOOT_DRIVE      db 0
+MSG_REAL_MODE   db "Started in 16-bit Real Mode$"
+MSG_PROT_MODE   db "Successfully landed in 32-bit Protected Mode$"
+MSG_LOAD_KERNEL db "Loading kernel into memory$"
 
-	times		128 db 'dead'							;	Padding data to copy, to unsure we copied good values
-	times		128 db 'babe'
+times 510 - ($ - $$) db 0
+dw 0xdead
